@@ -24,7 +24,7 @@ example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
   fun b ↦ by
     rcases b with ⟨⟨_|_, _|_⟩, ⟨_|_, _|_⟩, door_eq_not⟩ <;>
     apply And.intro <;>
-    solve | exact door_eq_not | exact rfl
+    solve | exact door_eq_not | rfl
 
 example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
   fun asker ↦ do
@@ -33,7 +33,7 @@ example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
   fun b ↦ by
     rcases b with ⟨⟨_|_, _|_⟩, ⟨_|_, _|_⟩, door_eq_not⟩ <;>
     apply And.intro <;>
-    solve | exact door_eq_not | exact rfl
+    solve | exact door_eq_not | rfl
 
 example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
   fun asker ↦ do

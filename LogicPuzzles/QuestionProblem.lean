@@ -21,18 +21,20 @@ def Solver α cfg := {M: Type _ → Type _} → [Monad M] → Asker M α cfg →
   WriterT (History α cfg) M cfg.Solution
 abbrev Solver.fromSpec (_: Spec α cfg) := Solver α
 namespace Spec
-def valid (spec: Spec α cfg) (solver: Solver α cfg) (a: α): Prop :=
-  (spec a).check <| @solver Id _ (spec a).loggedAsk |>.1
-def n_asks (spec: Spec α cfg) (solver: Solver α cfg) (n: ℕ) (a: α) : Prop :=
-  @solver Id _ (spec a).loggedAsk |>.2.length = n
+abbrev run (spec: Spec α cfg) (solver: Solver α cfg) (a: α) :
+  Writer (History α cfg) cfg.Solution := @solver Id _ (spec a).loggedAsk
+abbrev valid (spec: Spec α cfg) (solver: Solver α cfg) (a: α) : Prop :=
+  (spec a).check <| spec.run solver a |>.1
+abbrev asks_le_n (spec: Spec α cfg) (solver: Solver α cfg) (n: ℕ) (a: α) : Prop :=
+  spec.run solver a |>.2.length ≤ n
 structure Solution (self: Spec α cfg) where
   solver: Solver α cfg
   valid a: self.valid solver a
 structure SolutionN (self: Spec α cfg) (n: ℕ) extends Solution self where
-  n_asks a: self.n_asks solver n a
+  asks_le_n a: self.asks_le_n solver n a
 def SolutionN.of_solver_valid_and_n_asks {spec: Spec α cfg} {n: ℕ}
-  (solver: Solver α cfg) (h: ∀a, spec.valid solver a ∧ spec.n_asks solver n a) :
+  (solver: Solver α cfg) (h: ∀a, spec.valid solver a ∧ spec.asks_le_n solver n a) :
   spec.SolutionN n := ⟨⟨solver, (h · |>.left)⟩, (h · |>.right)⟩
 
 end Spec
-attribute [simp] check ask loggedAsk Spec.valid Spec.n_asks
+attribute [simp] check ask loggedAsk

@@ -37,7 +37,7 @@ example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
 
 example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
   fun asker ↦ do
-    let ans ← asker 0 fun ⟨⟨char, good⟩, _, _⟩ ↦ (char = true) = good
+    let ans ← asker 0 fun ⟨⟨char, good⟩, _, _⟩ ↦ (char = true) == good
     return cond ans 0 1
   fun b ↦ by
     apply And.intro <;>

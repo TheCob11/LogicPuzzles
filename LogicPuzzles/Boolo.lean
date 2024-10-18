@@ -29,11 +29,11 @@ structure Boolo (gen := StdGen) [RandomGen gen] where
 abbrev Boolo.getChar (b: Boolo) : Fin 3 → Character
 | 0 => b.a | 1 => b.b | 2 => b.c
 open QuestionProblem
-abbrev BooloConfig := Config.CharIDer Character (Fin 3) Response
-abbrev BooloSpec : Spec Boolo BooloConfig := fun b ↦
+abbrev BooloConfig := Config.CharIDer Character (Fin 3) Response Boolo
+abbrev BooloSpec : Spec BooloConfig := fun b ↦
   {
   check := fun s ↦ s 0 = b.a ∧ s 1 = b.b ∧ s 2 = b.c
-  ask := fun i q ↦ b.translate <| match b.getChar i with
+  ask := fun (i, q) ↦ b.translate <| match b.getChar i with
   | T => q b
   | F => ! q b
   | R => randBool b.rng |>.1
@@ -73,21 +73,22 @@ abbrev BooloSpec : Spec Boolo BooloConfig := fun b ↦
 --       | Y => id_c := R
 --     return ![id_a, id_b, id_c]
 
-def solver_hopefully : Solver Boolo BooloConfig := fun asker ↦ do
+def solver_hopefully : Solver BooloConfig := fun asker ↦ do
     let mut (id_a, id_b, id_c) := (R, R, R) -- default garbage
     let be_honest (translate : Bool ≃ Response) (char: Character) (q: Bool) :=
       ((translate true = X) = (char = T)) == q
     -- if r1 is X, then c is not random; if Y, then a is not random
-    let r1 := Eq X <| ← asker 1 fun ⟨a, b, _, translate, _, _⟩ ↦ be_honest translate b (a = R)
+    let r1 := Eq X <| ← asker<|.mk 1 fun ⟨a, b, _, translate, _, _⟩ ↦
+      be_honest translate b (a = R)
     let non_rando : BooloConfig.Idx := cond r1 2 0
-    let r2 := Eq X <| ← asker non_rando fun ⟨a, _, c, translate, _, _⟩ ↦
+    let r2 := Eq X <| ← asker<|.mk non_rando fun ⟨a, _, c, translate, _, _⟩ ↦
       let you := cond r1 c a
       be_honest translate you (you = F)
 
     let non_rando_id := cond r2 F T
     if r1 then id_c := non_rando_id
           else id_a := non_rando_id
-    let r3 := Eq X <| ← asker non_rando fun ⟨a, b, c, translate, _, _⟩ ↦
+    let r3 := Eq X <| ← asker<|.mk non_rando fun ⟨a, b, c, translate, _, _⟩ ↦
       let you := cond r1 c a
       be_honest translate you (b = R)
     let remaining_id := cond r2 T F -- swapped from non_rando_id
@@ -111,7 +112,7 @@ instance : BooloSpec.SolutionN 3 := .of_solver_valid_and_n_asks
     | exact a_ne_c.irrefl.elim
     | exact b_ne_c.irrefl.elim
     all_goals cases ht: b.translate true <;> cases hf: b.translate false <;>
-      try exact Boolo.translate_ne' b _ ht hf |>.elim
+      try exact b.translate_ne' _ ht hf |>.elim
     all_goals dsimp only [Spec.valid, Spec.run, Spec.asks_le_n,
       solver_hopefully, loggedAsk]
     all_goals apply And.intro <;> set_option maxHeartbeats 1 in solve

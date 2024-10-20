@@ -75,22 +75,18 @@ abbrev BooloSpec : Spec BooloConfig := fun b ↦
 
 def solver_hopefully : Solver BooloConfig := fun asker ↦ do
     let mut (id_a, id_b, id_c) := (R, R, R) -- default garbage
-    let be_honest (translate : Bool ≃ Response) (char: Character) (q: Bool) :=
-      ((translate true = X) = (char = T)) == q
+    let ask_honest (i: Fin 3) (q: Boolo → Bool) :=
+      return Eq X <| ← asker <|.mk i fun b ↦
+      ((b.translate true = X) = (b.getChar i = T)) == q b
     -- if r1 is X, then c is not random; if Y, then a is not random
-    let r1 := Eq X <| ← asker<|.mk 1 fun ⟨a, b, _, translate, _, _⟩ ↦
-      be_honest translate b (a = R)
+    let r1 ← ask_honest 1 fun b ↦ b.a = R
     let non_rando : BooloConfig.Idx := cond r1 2 0
-    let r2 := Eq X <| ← asker<|.mk non_rando fun ⟨a, _, c, translate, _, _⟩ ↦
-      let you := cond r1 c a
-      be_honest translate you (you = F)
+    let r2 ← ask_honest non_rando fun b ↦ b.getChar non_rando = F
 
     let non_rando_id := cond r2 F T
     if r1 then id_c := non_rando_id
           else id_a := non_rando_id
-    let r3 := Eq X <| ← asker<|.mk non_rando fun ⟨a, b, c, translate, _, _⟩ ↦
-      let you := cond r1 c a
-      be_honest translate you (b = R)
+    let r3 ← ask_honest non_rando fun b ↦ b.b = R
     let remaining_id := cond r2 T F -- swapped from non_rando_id
     if r3 then
       id_b := R
@@ -103,8 +99,7 @@ def solver_hopefully : Solver BooloConfig := fun asker ↦ do
             else id_c := R
     return ![id_a, id_b, id_c]
 
-instance : BooloSpec.SolutionN 3 := .of_solver_valid_and_n_asks
-  solver_hopefully
+example : BooloSpec.SolutionN 3 := .of_solver_valid_and_n_asks solver_hopefully
   fun b ↦ by
     rcases hb:b with ⟨_|_|_, _|_|_, _|_|_, _, ⟨a_ne_b, a_ne_c, b_ne_c⟩, rng⟩ <;>
     try solve
@@ -115,12 +110,12 @@ instance : BooloSpec.SolutionN 3 := .of_solver_valid_and_n_asks
       try exact b.translate_ne' _ ht hf |>.elim
     all_goals dsimp only [Spec.valid, Spec.run, Spec.asks_le_n,
       solver_hopefully, loggedAsk]
-    all_goals apply And.intro <;> set_option maxHeartbeats 1 in solve
-    | simp_all [pure, bind, tell,
-      WriterT.mk, StateT.bind, StateT.pure, StateT.map, Functor.map]
+    all_goals apply And.intro <;> set_option maxHeartbeats 5 in solve
+    | simp_all [pure, bind, tell, WriterT.mk, StateT.bind, StateT.pure,
+                StateT.map, Functor.map]
     | cases (randBool rng).1 <;>
-      simp_all [pure, bind, tell,
-        WriterT.mk, StateT.bind, StateT.pure, StateT.map, Functor.map]
+      simp_all [pure, bind, tell, WriterT.mk, StateT.bind, StateT.pure,
+                StateT.map, Functor.map]
 
 
 
@@ -131,11 +126,11 @@ instance : BooloSpec.SolutionN 3 := .of_solver_valid_and_n_asks
 --         a := T, b := R, c := F,
 --         translate := {
 --           toFun := fun
---           | true => X
---           | false => Y
+--           | true => Y
+--           | false => X
 --           invFun := fun
---           | X => true
---           | Y => false
+--           | Y => true
+--           | X => false
 --           left_inv := by rintro ⟨_|_⟩ <;> exact rfl
 --           right_inv := by rintro ⟨_|_⟩ <;> exact rfl
 --         }

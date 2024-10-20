@@ -10,11 +10,11 @@ structure Basic where
   a : Guard
   b : Guard
   door_eq_not : a.good_door = !b.good_door
-abbrev Basic.guards (b: Basic) := [b.a, b.b]
+def Basic.getChar (b: Basic) : Fin 2 → Guard | 0 => b.a | 1 => b.b
 
 def BasicSpec : QuestionProblem.Spec (.CharPicker 2 Guard Bool Basic) := fun b ↦ {
-  check := fun c ↦ b.guards[c].good_door
-  ask := fun (c, q) ↦ b.guards[c].truther = q b
+  check := fun c ↦ (b.getChar c).good_door
+  ask := fun (c, q) ↦ (b.getChar c).truther = q b
 }
 
 example : BasicSpec.SolutionN 1 := .of_solver_valid_and_n_asks
